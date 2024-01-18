@@ -5,6 +5,7 @@ import (
 	"gotoko-postgres/app/models"
 	"gotoko-postgres/database/seeders"
 	"log"
+	"math"
 	"net/http"
 	"os"
 
@@ -17,12 +18,14 @@ import (
 type Server struct {
 	DB     *gorm.DB
 	Router *mux.Router
+	AppConfig *AppConfig
 }
 
 type AppConfig struct {
 	AppName string
 	AppEnv  string
 	AppPort string
+	AppURL string
 }
 
 type DBconfig struct {
@@ -33,10 +36,33 @@ type DBconfig struct {
 	DBHost     string
 }
 
+type PageLink struct {
+	Page int32
+	Url string
+	IsCurrentPage bool
+}
+
+type PaginationLinks struct {
+	CurrentPage string
+	NextPage string
+	PrevPage string
+	TotalRows int32
+	TotalPages int32
+	Links []PageLink
+}
+
+type PaginationParams struct {
+	Path string
+	TotalRows int32
+	PerPage int32
+	CurrentPage int32
+}
+
 func (server *Server) Initialize(appConfig AppConfig, dbConfig DBconfig) {
 	fmt.Println("Wellcome to " + appConfig.AppName)
 
 	server.InitializeDB(dbConfig)
+	server.InitializeAppConfig(appConfig)
 	server.InitializeRoutes()
 }
 
@@ -55,6 +81,10 @@ func (server *Server) InitializeDB(dbConfig DBconfig) {
 		panic("Failed on connecting to Database")
 	}
 
+}
+
+func (server *Server) InitializeAppConfig(appconfig AppConfig) {
+	server.AppConfig = &appconfig
 }
 
 func (server *Server) dbMigrate() {
@@ -96,4 +126,41 @@ func (server *Server) InitCommands(config AppConfig, dbConfig DBconfig) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func GetPaginationLinks(config *AppConfig, params PaginationParams) (PaginationLinks, error) {
+	var links []PageLink
+
+	totalPage := int32(math.Ceil(float64(params.TotalRows)/ float64(params.PerPage)))
+
+	for i := 1; int32(i) <= totalPage; i++ {
+		links = append(links, PageLink{
+			Page: int32(i),
+			Url: fmt.Sprintf("%s/%s?page=%s", config.AppURL, params.Path, fmt.Sprint(i)),
+			IsCurrentPage: int32(i) == params.CurrentPage,
+		})
+	}
+
+	var nextPage int32
+	var prevPage int32
+
+	prevPage = 1
+	nextPage = totalPage
+
+	if params.CurrentPage > 2 {
+		prevPage = params.CurrentPage - 1
+	}
+
+	if params.CurrentPage < totalPage {
+		nextPage = params.CurrentPage + 1
+	}
+
+	return PaginationLinks{
+		CurrentPage: fmt.Sprintf("%s/%s?page=%s", config.AppURL, params.Path, fmt.Sprint(params.CurrentPage)),
+		NextPage: fmt.Sprintf("%s/%s?page=%s", config.AppURL, params.Path, fmt.Sprint(nextPage)),
+		PrevPage: fmt.Sprintf("%s/%s?page=%s", config.AppURL, params.Path, fmt.Sprint(prevPage)),
+		TotalRows: params.TotalRows,
+		TotalPages: totalPage,
+		Links: links,
+	}, nil
 }
