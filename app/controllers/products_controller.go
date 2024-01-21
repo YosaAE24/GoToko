@@ -43,7 +43,7 @@ func (server *Server) Products(w http.ResponseWriter, r *http.Request) {
 
 func (server *Server) GetProductBySlug (w http.ResponseWriter, r *http.Request) {
 	render := render.New(render.Options{
-		Layout: "Layout",
+		Layout: "layout",
 	})
 
 	vars := mux.Vars(r)

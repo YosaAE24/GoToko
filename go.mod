@@ -8,6 +8,8 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/gorilla/securecookie v1.1.2 // indirect
+	github.com/gorilla/sessions v1.2.2 // indirect
 	github.com/gosimple/slug v1.12.0 // indirect
 	github.com/gosimple/unidecode v1.0.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
